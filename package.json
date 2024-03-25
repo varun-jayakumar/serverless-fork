@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -17,6 +18,10 @@
   },
   "homepage": "https://github.com/varunsPrivateOrg/serverless#readme",
   "dependencies": {
-    "@google-cloud/functions-framework": "^3.1.0"
-}
+    "@google-cloud/functions-framework": "^3.1.0",
+    "@sendgrid/mail": "^8.1.1",
+    "dotenv": "^16.4.5",
+    "jsonwebtoken": "^9.0.2",
+    "uuid": "^9.0.1"
+  }
 }
