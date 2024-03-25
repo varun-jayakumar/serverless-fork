@@ -44,7 +44,7 @@ functions.cloudEvent("sendEmail", async (cloudEvent) => {
 
 const updateDBHelper = async (email, token) => {
   const queryText =
-    "UPDATE your_table_name SET verification_token = $1, is_email_sent = true WHERE username = $2";
+    "UPDATE your_table_name SET verification_token = $1, is_verificationEmail_sent = true WHERE username = $2";
 
   try {
     const res = await client.query(queryText, [token, email]);
