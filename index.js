@@ -4,27 +4,57 @@ import sgMail from "@sendgrid/mail";
 import functions from "@google-cloud/functions-framework";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
+import pkg from "pg";
+const { Client } = pkg;
+
+const client = new Client({
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
+});
 
 dotenv.config();
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-functions.cloudEvent("sendEmail", (cloudEvent) => {
+functions.cloudEvent("sendEmail", async (cloudEvent) => {
   const base64email = cloudEvent.data.message.data;
   const email = Buffer.from(base64email, "base64").toString();
-
+  let conneciton;
   if (email) {
-    console.log(`Sending Email to: ${email}`);
-    const token = generateTokenHelper();
-    const verificationLink = constructVerificationLink(token);
-    const message = generateMessageHelper(email, verificationLink);
-    const isMessageSent = sendEmail(message);
-    if (isMessageSent) {
-      console.log("Email sent");
-    } else {
-      console.log("Email Sending Fail");
+    try {
+      conneciton = await client.connect();
+      const token = generateTokenHelper();
+      const verificationLink = constructVerificationLink(token);
+      const message = generateMessageHelper(email, verificationLink);
+      const isMessageSent = sendEmail(message);
+      const isUpdateSuccess = updateDBHelper(email, token);
+      if (isMessageSent) {
+        console.log("Email sent");
+      } else {
+        console.log("Email Sending Fail");
+      }
+    } catch (e) {
+      console.log("Error connecting to DB", e);
     }
+    console.log(`Sending Email to: ${email}`);
   }
 });
+
+const updateDBHelper = async (email, token) => {
+  const queryText =
+    "UPDATE your_table_name SET token = $1, is_email_sent = true WHERE username = $2";
+
+  try {
+    const res = await client.query(queryText, [token, email]);
+    console.log("Update successfull");
+  } catch (e) {
+    console.log("error updating DB", e);
+  } finally {
+    await client.end();
+  }
+};
 
 const generateTokenHelper = (email) => {
   const expiry = "2m"; // Token expires in 1 hour
@@ -61,10 +91,3 @@ const sendEmail = async (message) => {
   if (emailresponse[0].statusCode == 202) return true;
   else return false;
 };
-
-// on trigger from pub/sub; (email of the user)
-// an email should be sent from the lambda to the user with 2 min expiry window
-// make a api call to the web app alsong with the time of expiry (to save it to the DB)
-// or can we do it directly from here
-
-// eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjNhM2FlMTNkLWViYTEtNGQ1Yi1iNDM1LTdmMDNjNjk1NmNkMCIsImlhdCI6MTcxMTMxOTY1NCwiZXhwIjoxNzExMzE5Nzc0fQ.5wx1-w5Ggi5ni1tG8fxXPW0DmR1KviaFiVb5bQq_924
