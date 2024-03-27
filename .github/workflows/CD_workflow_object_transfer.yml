@@ -28,4 +28,4 @@ jobs:
         uses: "google-github-actions/upload-cloud-storage@v2"
         with:
           path: "./serverless.zip"
-          destination: "csye6225-demo-gcf-source/serverless.zip"
+          destination: "csye6225-demo-gcf-source/"
