@@ -246,4 +246,4 @@ const generateHtmlTemplate = (action_url) => {
   return template;
 };
 
-export default generateHtmlTemplate;
+exports.generateHtmlTemplate = generateHtmlTemplate;
