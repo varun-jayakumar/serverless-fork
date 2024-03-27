@@ -1,10 +1,10 @@
-import generateHtmlTemplate from "./template.js";
-import dotenv from "dotenv";
-import sgMail from "@sendgrid/mail";
-import functions from "@google-cloud/functions-framework";
-import jwt from "jsonwebtoken";
-import { v4 as uuidv4 } from "uuid";
-import pkg from "pg";
+const template = require("./template");
+const dotenv = require("dotenv");
+const sgMail = require("@sendgrid/mail");
+const functions = require("@google-cloud/functions-framework");
+const jwt = require("jsonwebtoken");
+const { v4: uuidv4 } = require("uuid");
+const pkg = require("pg");
 const { Client } = pkg;
 
 const client = new Client({
@@ -15,16 +15,21 @@ const client = new Client({
   port: process.env.DB_PORT,
 });
 
-dotenv.config();
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
 functions.cloudEvent("sendEmail", async (cloudEvent) => {
+  console.log({
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT,
+  });
   const base64email = cloudEvent.data.message.data;
   const email = Buffer.from(base64email, "base64").toString();
-  let conneciton;
+  console.log(email);
   if (email) {
     try {
-      conneciton = await client.connect();
+      await client.connect();
       const token = generateTokenHelper();
       const verificationLink = constructVerificationLink(token);
       const message = generateMessageHelper(email, verificationLink);
@@ -38,16 +43,17 @@ functions.cloudEvent("sendEmail", async (cloudEvent) => {
     } catch (e) {
       console.log("Error connecting to DB", e);
     }
-    console.log(`Sending Email to: ${email}`);
   }
 });
 
 const updateDBHelper = async (email, token) => {
   const queryText =
-    "UPDATE your_table_name SET verification_token = $1, is_verificationEmail_sent = true WHERE username = $2";
+    'UPDATE "Users" SET verification_token = $1, "is_verificationEmail_sent" = true WHERE username = $2';
 
   try {
     const res = await client.query(queryText, [token, email]);
+    // await client.end();
+    console.log(res);
     console.log("Update successfull");
   } catch (e) {
     console.log("error updating DB", e);
@@ -75,7 +81,7 @@ const generateMessageHelper = (to_email, verificationLink) => {
     to: to_email,
     from: "admin@varunjayakumar.me",
     subject: "CSYE6225 webapp - Verify you email",
-    html: generateHtmlTemplate(verificationLink),
+    html: template.generateHtmlTemplate(verificationLink),
   };
   return msg;
 };
@@ -83,6 +89,7 @@ const generateMessageHelper = (to_email, verificationLink) => {
 const sendEmail = async (message) => {
   let emailresponse;
   try {
+    console.log(`Sending Email to: ${message.to}`);
     emailresponse = await sgMail.send(message);
   } catch (e) {
     console.log(e);
