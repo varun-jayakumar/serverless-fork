@@ -2,7 +2,6 @@ const template = require("./template");
 const dotenv = require("dotenv");
 const sgMail = require("@sendgrid/mail");
 const functions = require("@google-cloud/functions-framework");
-const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
 const pkg = require("pg");
 const { Pool } = pkg;
@@ -49,12 +48,15 @@ functions.cloudEvent("sendEmail", async (cloudEvent) => {
     if (email) {
       try {
         const token = generateTokenHelper();
-        const verificationLink = constructVerificationLink(token);
+        const verificationLink = constructVerificationLink(token, email);
         const message = generateMessageHelper(email, verificationLink);
         const isMessageSent = sendEmail(message);
+        const now = new Date();
+        const twoMinutesInMilliseconds = 2 * 60 * 1000; // Convert 2 minutes to milliseconds
+        const validity = new Date(now.getTime() + twoMinutesInMilliseconds); // Add 2 minutes to 'now'
         if (isMessageSent) {
           infoLog(`Verification email sent for user: ${email}`);
-          const isUpdateSuccess = updateDBHelper(email, token);
+          const isUpdateSuccess = updateDBHelper(email, token, validity);
         } else {
           errorLog(`Verification email failed sending for username: ${email}`);
         }
@@ -67,12 +69,12 @@ functions.cloudEvent("sendEmail", async (cloudEvent) => {
   }
 });
 
-const updateDBHelper = async (email, token) => {
+const updateDBHelper = async (email, token, validity) => {
   const queryText =
-    'UPDATE "Users" SET verification_token = $1, "is_verificationEmail_sent" = true WHERE username = $2';
+    'UPDATE "Users" SET verification_token = $1, "is_verificationEmail_sent" = true, "token_valid_until" = $2 WHERE username = $3';
 
   try {
-    const res = await pool.query(queryText, [token, email]);
+    const res = await pool.query(queryText, [token, validity, email]);
     infoLog(`DB Update successful : ${email}`);
   } catch (e) {
     errorLog("error updating DB");
@@ -82,17 +84,12 @@ const updateDBHelper = async (email, token) => {
   }
 };
 
-const generateTokenHelper = (email) => {
-  const expiry = "2m";
-  const secretKey = process.env.TOKEN_SECRET_KEY;
-  const uniqueID = uuidv4();
-  return jwt.sign({ id: uniqueID, email: email }, secretKey, {
-    expiresIn: expiry,
-  });
+const generateTokenHelper = () => {
+  return uuidv4();
 };
 
-const constructVerificationLink = (token) => {
-  const url = `http://varunjayakumar.me:3000/v1/user/verify?token=${token}`;
+const constructVerificationLink = (token, email) => {
+  const url = `http://varunjayakumar.me:3000/v1/user/verify?token=${token}&username=${email}`;
   return url;
 };
 
