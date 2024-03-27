@@ -18,9 +18,12 @@
   "homepage": "https://github.com/varunsPrivateOrg/serverless#readme",
   "dependencies": {
     "@google-cloud/functions-framework": "^3.1.0",
+    "@google-cloud/logging-winston": "^6.0.0",
     "@sendgrid/mail": "^8.1.1",
     "dotenv": "^16.4.5",
+    "i": "^0.3.7",
     "jsonwebtoken": "^9.0.2",
+    "npm": "^10.5.0",
     "pg": "^8.11.3",
     "uuid": "^9.0.1"
   }
