@@ -52,7 +52,8 @@ functions.cloudEvent("sendEmail", async (cloudEvent) => {
         const message = generateMessageHelper(email, verificationLink);
         const isMessageSent = sendEmail(message);
         const now = new Date();
-        const twoMinutesInMilliseconds = 2 * 60 * 1000; // Convert 2 minutes to milliseconds
+        const expiryInMinutes = process.env.emailExpiry | 2;
+        const twoMinutesInMilliseconds = expiryInMinutes * 60 * 1000; // Convert 2 minutes to milliseconds
         const validity = new Date(now.getTime() + twoMinutesInMilliseconds); // Add 2 minutes to 'now'
         if (isMessageSent) {
           infoLog(`Verification email sent for user: ${email}`);
