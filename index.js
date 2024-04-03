@@ -89,7 +89,7 @@ const generateTokenHelper = () => {
 };
 
 const constructVerificationLink = (token, email) => {
-  const url = `http://varunjayakumar.me:3000/v1/user/verify?token=${token}&username=${email}`;
+  const url = `https://varunjayakumar.me/v1/user/verify?token=${token}&username=${email}`;
   return url;
 };
 
